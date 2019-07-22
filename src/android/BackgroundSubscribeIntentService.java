@@ -18,31 +18,47 @@ package org.apache.cordova.plugin;
  */
 
 
+import android.Manifest;
 import android.app.IntentService;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationManager;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.gson.Gson;
 
 import com.eggersimone.mobirec.MainActivity;
 import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.messages.Message;
 import com.google.android.gms.nearby.messages.MessageListener;
+import com.intentfilter.androidpermissions.PermissionManager;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -53,7 +69,12 @@ import java.util.List;
 public class BackgroundSubscribeIntentService extends IntentService {
     private static final int MESSAGES_NOTIFICATION_ID = 1;
     private static final int NUM_MESSAGES_IN_NOTIFICATION = 5;
-
+    private LocationManager locationManager;
+    private Context mContext;
+    public static final String[] PERMISSIONS = {
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION
+    };
     public BackgroundSubscribeIntentService() {
         super("BackgroundSubscribeIntentService");
     }
@@ -61,6 +82,7 @@ public class BackgroundSubscribeIntentService extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
+        mContext = this;
         updateNotification("First message");
     }
 
@@ -85,14 +107,40 @@ public class BackgroundSubscribeIntentService extends IntentService {
         }
     }
 
+    public boolean checkLocationPermission(){
+        int permissionCheck = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+        return permissionCheck == PackageManager.PERMISSION_GRANTED;
+    }
+
+
+
+
+    public void startTracking() {
+        if (checkLocationPermission()) {
+            locationManager = (LocationManager) mContext.getSystemService(mContext.LOCATION_SERVICE);
+            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        }
+    }
+
+
+
     private void saveNearbyDevice(String message) {
+        String jsonLocation = null;
+        if (checkLocationPermission()) {
+            locationManager = (LocationManager) mContext.getSystemService(mContext.LOCATION_SERVICE);
+            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Gson gson = new Gson();
+            jsonLocation = gson.toJson(lastKnownLocation);
+        }
         SQLiteDatabase db = openOrCreateDatabase("db.mobirec",MODE_PRIVATE,null);
         long time = System.currentTimeMillis();
-        db.execSQL("CREATE TABLE IF NOT EXISTS NearbyDevices(Name VARCHAR,Timestamp int);");
+        db.execSQL("CREATE TABLE IF NOT EXISTS NearbyDevices(Name VARCHAR,Timestamp int, Location VARCHAR);");
 
         ContentValues insertValues = new ContentValues();
         insertValues.put("Name", message);
         insertValues.put("Timestamp", time);
+        insertValues.put("Location", jsonLocation);
         db.insert("NearbyDevices", null, insertValues);
 
         db.close();
@@ -124,7 +172,7 @@ public class BackgroundSubscribeIntentService extends IntentService {
             notificationBuilder.setChannelId("my_channel_01");
             /* Create or update. */
             NotificationChannel channel = new NotificationChannel("my_channel_01",
-                    "Mobirec notification channel",
+                    "Channel human readable title",
                     NotificationManager.IMPORTANCE_DEFAULT);
             notificationManager.createNotificationChannel(channel);
         }
