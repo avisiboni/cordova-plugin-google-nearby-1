@@ -9,9 +9,6 @@ import org.apache.cordova.PluginResult;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
-import android.app.Activity;
-import android.net.Uri;
 import com.google.android.gms.nearby.Nearby;
 
 import com.google.android.gms.nearby.messages.Message;
