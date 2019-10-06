@@ -24,41 +24,25 @@ import android.app.IntentService;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
-import android.media.AudioAttributes;
-import android.net.Uri;
 import android.os.Build;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
-import android.text.TextUtils;
 import android.util.Log;
+import io.ionic.starter.MainActivity;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.gson.Gson;
 
-import com.eggersimone.mobirec.MainActivity;
 import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.messages.Message;
 import com.google.android.gms.nearby.messages.MessageListener;
-import com.intentfilter.androidpermissions.PermissionManager;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -83,7 +67,7 @@ public class BackgroundSubscribeIntentService extends IntentService {
     public void onCreate() {
         super.onCreate();
         mContext = this;
-        updateNotification("First message");
+       // updateNotification("First message");
     }
 
 
@@ -155,6 +139,7 @@ public class BackgroundSubscribeIntentService extends IntentService {
         PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
                 launchIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+
         String contentTitle = "Nearby peer found";
         String contentText = message;
 
@@ -162,11 +147,14 @@ public class BackgroundSubscribeIntentService extends IntentService {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(android.R.drawable.star_on)
                 .setContentTitle(contentTitle)
+                .setVibrate(new long[]{2000,1000})
                 .setContentText(contentText)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(contentText))
-                .setOngoing(true)
+                //.setOngoing(true)
                 .setContentIntent(pi);
-
+        Intent dialogIntent = new Intent(getApplicationContext(), MainActivity.class);
+        dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(dialogIntent);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notificationBuilder.setChannelId("my_channel_01");
