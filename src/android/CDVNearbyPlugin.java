@@ -35,7 +35,6 @@ public class CDVNearbyPlugin extends CordovaPlugin {
         @Override
         public void onFound(Message message) {
             String found_message = new String(message.getContent());
-            Log.d(TAG, "found messsage: " + found_message);
             PluginResult result = new PluginResult(PluginResult.Status.OK, found_message);
             result.setKeepCallback(true);
             CDVNearbyPlugin.this.subscribe_callback.sendPluginResult(result);
